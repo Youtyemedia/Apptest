@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Collezione Fumetti</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>La Mia Collezione di Fumetti</h1>
+            <nav>
+                <button id="addCollectionBtn" class="nav-btn">
+                    <i class="fas fa-plus"></i> Nuova Collezione
+                </button>
+                <button id="viewArchiveBtn" class="nav-btn">
+                    <i class="fas fa-archive"></i> Archivio Collezioni
+                </button>
+                <button id="backupBtn" class="nav-btn">
+                    <i class="fas fa-download"></i> Backup
+                </button>
+                <button id="restoreBtn" class="nav-btn">
+                    <i class="fas fa-upload"></i> Ripristina
+                </button>
+                <button id="themeToggleBtn" class="nav-btn theme-toggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button id="viewToggleBtn" class="nav-btn">
+                    <i class="fas fa-list"></i>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Sezione ricerca e filtri -->
+        <div class="search-filter-section">
+            <div class="search-bar">
+                <input type="text" id="searchInput" placeholder="Cerca per nome, collana...">
+                <button id="searchBtn">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+            <div class="filter-controls">
+                <select id="sortSelect">
+                    <option value="alphabetical">Ordine alfabetico</option>
+                    <option value="completion">Percentuale completamento</option>
+                    <option value="recent">Più recenti</option>
+                </select>
+                <select id="filterSelect">
+                    <option value="all">Tutte le collezioni</option>
+                    <option value="complete">Complete</option>
+                    <option value="incomplete">Incomplete</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Form per aggiungere una nuova collezione -->
+        <div id="addCollectionForm" class="modal hidden">
+            <div class="modal-content">
+                <h2>Aggiungi Nuova Collezione</h2>
+                <form id="collectionForm">
+                    <div class="form-group">
+                        <label for="collana">Collana:</label>
+                        <input type="text" id="collana" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nomeFumetto">Nome Fumetto:</label>
+                        <input type="text" id="nomeFumetto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="numeri">Numeri Totali:</label>
+                        <input type="number" id="numeri" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="copertina">Immagine di Copertina:</label>
+                        <div class="image-upload-container">
+                            <input type="file" id="copertina" accept="image/*" class="image-input">
+                            <div class="image-preview-container">
+                                <img id="imagePreview" src="" alt="Anteprima" class="hidden">
+                                <div id="uploadPlaceholder" class="upload-placeholder">
+                                    <i class="fas fa-image"></i>
+                                    <span>Clicca per caricare un'immagine</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Crea</button>
+                        <button type="button" class="btn-secondary" id="closeModal">Annulla</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Form per modificare una collezione esistente -->
+        <div id="editCollectionForm" class="modal hidden">
+            <div class="modal-content">
+                <h2>Modifica Collezione</h2>
+                <form id="editForm">
+                    <input type="hidden" id="editCollectionId">
+                    
+                    <div class="form-group">
+                        <label for="editCollana">Collana:</label>
+                        <input type="text" id="editCollana" name="editCollana" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editNomeFumetto">Nome Fumetto:</label>
+                        <input type="text" id="editNomeFumetto" name="editNomeFumetto" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editNumeri">Numeri Totali:</label>
+                        <input type="number" id="editNumeri" name="editNumeri" min="1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Immagine di Copertina:</label>
+                        <div class="image-upload-preview">
+                            <img id="editImagePreview" class="current-image-preview" src="" alt="Anteprima">
+                            <div class="image-upload-info">
+                                <p>Formato supportato: JPG, PNG</p>
+                                <div class="image-controls">
+                                    <label for="editCopertina" class="upload-btn">
+                                        <i class="fas fa-upload"></i> Carica Immagine
+                                        <input type="file" id="editCopertina" accept="image/*" class="image-input" style="display: none;">
+                                    </label>
+                                    <button type="button" id="removeImage" class="remove-image-btn">
+                                        <i class="fas fa-trash-alt"></i> Rimuovi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn-primary">Salva Modifiche</button>
+                        <button type="button" class="btn-secondary" id="closeEditModal">Annulla</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Input nascosto per il ripristino del backup -->
+        <input type="file" id="restoreFile" accept=".sqlite" style="display: none;">
+
+        <!-- Contenitore per l'archivio delle collezioni -->
+        <div id="collectionsArchive" class="collections-container">
+            <!-- Le collezioni verranno inserite qui dinamicamente -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
